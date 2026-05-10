@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grouped Index Book</title>
+    <style>
+        :root {
+            --width: 92vw;
+            --height: 72vh;
+            --max-w: 450px;
+            --speed: 0.5s;
+            --cover-bg: #10ac84; 
+            --back-bg: #222f3e;
+            --accent: #ff9f43;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #f1f2f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        .nav-bar {
+            padding: 12px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        input {
+            width: 40px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: var(--cover-bg);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        button.secondary { background: #718093; }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 2000px;
+        }
+
+        .stack {
+            position: relative;
+            width: var(--width);
+            max-width: var(--max-w);
+            height: var(--height);
+            transform-style: preserve-3d;
+        }
+
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 12px;
+            transition: transform var(--speed) ease, opacity var(--speed);
+            transform-origin: left;
+            backface-visibility: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+        }
+
+        .cover { background: var(--cover-bg) !important; color: white; border: none; }
+        .back-cover { background: var(--back-bg) !important; color: white; border: none; }
+
+        .page.flipped {
+            transform: rotateY(-145deg);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            margin: 10px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* --- GROUPED INDEX STYLING --- */
+        .index-group {
+            margin-bottom: 15px;
+        }
+
+        .group-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8395a7;
+            font-weight: 700;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
+        }
+
+        .index-link {
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            color: #2f3640;
+            font-size: 0.82rem; 
+            font-weight: 500;
+            display: block;
+            border-left: 3px solid var(--accent);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .index-link:active { background: #eee; }
+
+        h2 { margin: 0; font-size: 1.3rem; color: #2f3640; }
+        .page-num { text-align: center; font-size: 11px; color: #a5b1c2; margin-top: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="nav-bar">
+        <button onclick="jump(2)" class="secondary">Index</button>
+        <input type="number" id="pageInput" placeholder="#">
+        <button onclick="goToPage()">Go</button>
+        <button onclick="resetBook()" class="secondary">Reset</button>
+    </div>
+
+    <div class="main-container">
+        <div class="stack" id="bookStack">
+            
+            <!-- PAGE 1: COVER -->
+            <div class="page cover">
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+                    <h1 style="font-size: 2.2rem; margin:0;">LEARNING<br>MODULES</h1>
+                    <p style="opacity: 0.9;">Grouped Content Edition</p>
+                </div>
+                <div class="page-num">START</div>
+            </div>
+
+            <!-- PAGE 2: GROUPED INDEX -->
+            <div class="page">
+                <h2>Contents</h2>
+                <div class="scroll-area">
+                    
+                    <!-- Subject A -->
+                    <div class="index-group">
+                        <div class="group-header">Frontend Development</div>
+                        <div class="index-link" onclick="jump(3)">HTML5 Semantics</div>
+                        <div class="index-link" onclick="jump(4)">CSS 3D Transforms</div>
+                    </div>
+
+                    <!-- Subject B -->
+                    <div class="index-group">
+                        <div class="group-header">Backend Services</div>
+                        <div class="index-link" onclick="jump(5)">Node.js Basics</div>
+                        <div class="index-link" onclick="jump(6)">Database Design</div>
+                    </div>
+
+                    <!-- Subject C -->
+                    <div class="index-group">
+                        <div class="group-header">Deployment</div>
+                        <div class="index-link" onclick="jump(7)">Cloud Hosting</div>
+                    </div>
+
+                </div>
+                <div class="page-num">INDEX</div>
+            </div>
+
+            <!-- CONTENT PAGES (Matching the Index links) -->
+            <div class="page">
+                <h2>HTML5 Semantics</h2>
+                <div class="scroll-area"><p>Semantics help search engines and screen readers understand your page structure.</p></div>
+                <div class="page-num">P.3</div>
+            </div>
+
+            <div class="page">
+                <h2>CSS 3D Transforms</h2>
+                <div class="scroll-area"><p>Perspective and RotateY are the keys to this book effect.</p></div>
+                <div class="page-num">P.4</div>
+            </div>
+
+            <div class="page">
+                <h2>Node.js Basics</h2>
+                <div class="scroll-area"><p>Node allows you to run JavaScript on the server-side efficiently.</p></div>
+                <div class="page-num">P.5</div>
+            </div>
+
+            <div class="page">
+                <h2>Database Design</h2>
+                <div class="scroll-area"><p>Proper normalization reduces data redundancy.</p></div>
+                <div class="page-num">P.6</div>
+            </div>
+
+            <!-- PAGE 7: BACK COVER -->
+            <div class="page back-cover">
+                <div style="flex:1; display:flex; justify-content:center; align-items:center;">
+                    <h2>COMPLETE</h2>
+                </div>
+                <div class="page-num">END</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const pages = document.querySelectorAll('.page');
+        
+        pages.forEach((page, index) => {
+            page.style.zIndex = pages.length - index;
+            
+            page.addEventListener('click', (e) => {
+                // Ignore clicks on links, group headers, or scroll areas
+                if(e.target.closest('.index-link') || 
+                   e.target.closest('.group-header') || 
+                   e.target.closest('.scroll-area')) return;
+                
+                if (!page.classList.contains('flipped')) {
+                    page.classList.add('flipped');
+                }
+            });
+        });
+
+        function goToPage() {
+            const val = parseInt(document.getElementById('pageInput').value);
+            if(val) jump(val);
+        }
+
+        function jump(target) {
+            if (target < 1 || target > pages.length) return;
+            pages.forEach((page, index) => {
+                const pageNum = index + 1;
+                if (pageNum < target) {
+                    page.classList.add('flipped');
+                } else {
+                    page.classList.remove('flipped');
+                }
+            });
+        }
+
+        function resetBook() {
+            pages.forEach(page => page.classList.remove('flipped'));
+        }
+    </script>
+</body>
+</html>

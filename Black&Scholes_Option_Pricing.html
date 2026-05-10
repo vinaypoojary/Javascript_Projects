@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black-Scholes Options Engine</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; padding: 20px; }
+        .container { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); width: 100%; max-width: 500px; border: 1px solid #334155; }
+        h2 { text-align: center; color: #38bdf8; margin-bottom: 1.5rem; font-weight: 300; letter-spacing: 1px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .full { grid-column: span 2; }
+        label { display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; }
+        input { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #f1f5f9; font-size: 1rem; box-sizing: border-box; }
+        input:focus { border-color: #38bdf8; outline: none; }
+        button { width: 100%; padding: 14px; background: #38bdf8; color: #0f172a; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #7dd3fc; }
+        table { width: 100%; margin-top: 25px; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; width: 33%; }
+        th { color: #38bdf8; font-size: 0.75rem; text-transform: uppercase; }
+        .val { font-family: 'Consolas', monospace; color: #fbbf24; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Options Engine</h2>
+    <div class="grid">
+        <div>
+            <label>Stock Price ($)</label>
+            <input type="number" id="S" value="24330" step="any">
+        </div>
+        <div>
+            <label>Strike Price ($)</label>
+            <input type="number" id="K" value="24350" step="any">
+        </div>
+        <div class="full">
+            <label>Days to Expiry</label>
+            <input type="number" id="D" value="6" step="any">
+        </div>
+        <div>
+            <label>Volatility (%)</label>
+            <input type="number" id="sigma_pct" value="18" step="any">
+        </div>
+        <div>
+            <label>Risk-Free Rate (%)</label>
+            <input type="number" id="r_pct" value="0.1" step="any">
+        </div>
+    </div>
+    
+    <button onclick="calculateBS()">Calculate</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Greek</th>
+                <th>Call</th>
+                <th>Put</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Price</td><td id="c_price" class="val">-</td><td id="p_price" class="val">-</td></tr>
+            <tr><td>Delta</td><td id="c_delta" class="val">-</td><td id="p_delta" class="val">-</td></tr>
+            <tr><td>Gamma</td><td id="c_gamma" class="val">-</td><td id="p_gamma" class="val">-</td></tr>
+            <tr><td>Vega</td><td id="c_vega" class="val">-</td><td id="p_vega" class="val">-</td></tr>
+            <tr><td>Theta (Day)</td><td id="c_theta" class="val">-</td><td id="p_theta" class="val">-</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function pdf(x) { return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI); }
+
+    function cdf(x) {
+        const a = [0.319381530, -0.356563782, 1.781477937, -1.821255978, 1.330274429];
+        const L = Math.abs(x);
+        const K = 1.0 / (1.0 + 0.2316419 * L);
+        let d = 1.0 - 1.0 / Math.sqrt(2 * Math.PI) * Math.exp(-L * L / 2) * (a[0] * K + a[1] * K**2 + a[2] * K**3 + a[3] * K**4 + a[4] * K**5);
+        return x >= 0 ? d : 1.0 - d;
+    }
+
+    function calculateBS() {
+        const S = parseFloat(document.getElementById('S').value);
+        const K = parseFloat(document.getElementById('K').value);
+        const T = parseFloat(document.getElementById('D').value) / 365;
+        const r = parseFloat(document.getElementById('r_pct').value) / 100;
+        const sigma = parseFloat(document.getElementById('sigma_pct').value) / 100;
+
+        if (T <= 0 || sigma <= 0) {
+            alert("Days and Volatility must be greater than 0");
+            return;
+        }
+
+        const d1 = (Math.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * Math.sqrt(T));
+        const d2 = d1 - sigma * Math.sqrt(T);
+
+        // Standard Calculations
+        const callP = S * cdf(d1) - K * Math.exp(-r * T) * cdf(d2);
+        const putP = K * Math.exp(-r * T) * cdf(-d2) - S * cdf(-d1);
+        
+        const callD = cdf(d1);
+        const putD = callD - 1;
+
+        // Shared Greeks
+        const gamma = pdf(d1) / (S * sigma * Math.sqrt(T));
+        const vega = (S * pdf(d1) * Math.sqrt(T)) / 100;
+
+        // Theta
+        const thetaC = (-(S * pdf(d1) * sigma) / (2 * Math.sqrt(T)) - r * K * Math.exp(-r * T) * cdf(d2)) / 365;
+        const thetaP = (-(S * pdf(d1) * sigma) / (2 * Math.sqrt(T)) + r * K * Math.exp(-r * T) * cdf(-d2)) / 365;
+
+        // Update UI - Showing values in both columns
+        document.getElementById('c_price').innerText = callP.toFixed(2);
+        document.getElementById('p_price').innerText = putP.toFixed(2);
+        
+        document.getElementById('c_delta').innerText = callD.toFixed(3);
+        document.getElementById('p_delta').innerText = putD.toFixed(3);
+        
+        document.getElementById('c_gamma').innerText = gamma.toFixed(4);
+        document.getElementById('p_gamma').innerText = gamma.toFixed(4);
+        
+        document.getElementById('c_vega').innerText = vega.toFixed(3);
+        document.getElementById('p_vega').innerText = vega.toFixed(3);
+        
+        document.getElementById('c_theta').innerText = thetaC.toFixed(3);
+        document.getElementById('p_theta').innerText = thetaP.toFixed(3);
+    }
+</script>
+
+</body>
+</html>
